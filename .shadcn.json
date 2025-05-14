@@ -1,0 +1,21 @@
+{
+    "$schema": "https://shadcn.com/schema.json",
+    "style": "default",
+    "tailwind": {
+      "config": "tailwind.config.js",
+      "css": "resources/css/app.css",
+      "baseColor": "slate"
+    },
+    "components": {
+      "path": "resources/js/Components/UI",
+      "ui": {
+        "button": true,
+        "card": true,
+        "textarea": true,
+        "avatar": true
+      }
+    },
+    "lib": {
+      "path": "resources/js/lib"
+    }
+  }
