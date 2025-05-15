@@ -22,21 +22,23 @@ class MuroController extends Controller
         ]);
     }
 
-    public function personal()
-    {
-        $user = Auth::user();
-        
-        return Inertia::render('Muro/Personal', [
-            'posts' => $user->posts()
-                ->with(['user' => fn($q) => $q->select('id', 'name')])
-                ->latest()
-                ->get(),
-            'flash' => [
-                'success' => session('success'),
-                'error' => session('error')
-            ]
-        ]);
-    }
+    // En MuroController.php
+public function personal()
+{
+    /** @var \App\Models\User $user */
+    $user = Auth::user();
+    
+    return Inertia::render('Muro/Personal', [
+        'posts' => $user->posts()
+            ->with(['user' => fn($q) => $q->select('id', 'name', 'profile_picture')])
+            ->latest()
+            ->get(),
+        'flash' => [
+            'success' => session('success'),
+            'error' => session('error')
+        ]
+    ]);
+}
 
     public function publico()
     {
