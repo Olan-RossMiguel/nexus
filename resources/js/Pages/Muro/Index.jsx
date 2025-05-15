@@ -193,7 +193,7 @@ export default function Index({ posts: initialPosts = [] }) {
                         {posts.map((post) => (
                             <Card
                                 key={post.id || `temp-${post.tempId}`}
-                                className={`p-4 ${post.isOptimistic && !post.id ? 'opacity-75' : ''}`} // Cambio importante aquí
+                                className={`p-4 ${post.isOptimistic && !post.id ? 'opacity-75' : ''}`}
                             >
                                 <div className="flex items-start space-x-3">
                                     <Avatar className="h-10 w-10">
@@ -211,7 +211,8 @@ export default function Index({ posts: initialPosts = [] }) {
                                             }}
                                         />
                                     </Avatar>
-                                    <div className="flex-1">
+                                    
+                                    <div className="min-w-0 flex-1">
                                         <div className="flex justify-between">
                                             <h3 className="font-semibold">
                                                 {post.user?.name || 'Usuario'}
@@ -221,9 +222,14 @@ export default function Index({ posts: initialPosts = [] }) {
                                                     'Enviando...'}
                                             </span>
                                         </div>
-                                        <p className="mt-1 whitespace-pre-line text-gray-700">
-                                            {post.content_text}
-                                        </p>
+
+                                        {/* TEXTO DEL POST - SOLUCIÓN APLICADA */}
+                                        <div className="mt-1 w-full">
+                                            <p className="overflow-x-hidden whitespace-pre-wrap break-words text-gray-700">
+                                                {post.content_text}
+                                            </p>
+                                        </div>
+
                                         {renderMedia(post)}
                                         {post.isOptimistic && !post.id && (
                                             <div className="mt-2 text-xs italic text-gray-500">

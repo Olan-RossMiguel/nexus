@@ -113,6 +113,11 @@ export const PostCreator = ({ onPostCreated }) => {
             // Cambia el onSuccess para incluir el ID real si viene del servidor
             onSuccess: (response) => {
                 reset();
+                setData({
+                    content_text: '', // Limpia el texto
+                    media_url: null, // Limpia el archivo
+                    media_type: null, // Limpia el tipo
+                });
                 setMediaPreview(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
 
