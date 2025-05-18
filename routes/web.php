@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MuroController;
 use App\Http\Controllers\PostController;
@@ -20,14 +21,35 @@ Route::get('/private/media/{userId}/{filename}', [PostController::class, 'showMe
     ->middleware('auth')
     ->name('private.media');
 // Rutas protegidas (requieren login)
+// En routes/web.php temporalmente
+Route::get('/debug-comments', function () {
+    $post = \App\Models\Post::with('comments.user')->first();
+    return [
+        'post_id' => $post->id,
+        'comments_count' => $post->comments->count(),
+        'first_comment' => $post->comments->first() ? [
+            'id' => $post->comments->first()->id,
+            'content' => $post->comments->first()->content,
+            'user' => $post->comments->first()->user->name
+        ] : null
+    ];
+});
 Route::middleware('auth')->group(function () {
+    Route::post('posts/{post}/like', [LikeController::class, 'toggleLike'])
+    ->name('posts.like')
+    ->middleware('auth');
+    // routes/web.php
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])
+        ->middleware(['auth', 'verified']);
+  
+    Route::post('/posts/{post}/comment', [PostController::class, 'comment'])->middleware('auth');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::get('/private/media/{userId}/{filename}', [PostController::class, 'showMedia'])
-         ->name('private.media');
+        ->name('private.media');
     // Muro
     Route::get('/muro', [MuroController::class, 'index'])->name('muro.publico');
     Route::get('/mi-muro', [MuroController::class, 'personal'])->name('muro.personal');
-    
+
     // Perfil
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -43,4 +65,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

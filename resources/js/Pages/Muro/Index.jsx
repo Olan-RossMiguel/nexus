@@ -1,10 +1,13 @@
 // ... imports
 import { Avatar } from '@/Components/UI/avatar';
 import { Card } from '@/Components/UI/card';
+import { CommentSection } from '@/Components/UI/CommentSection';
+import { LikeButton } from '@/Components/UI/LikeButton';
 import { PostCreator } from '@/Components/UI/PostCreator';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { usePage } from '@inertiajs/react';
 import { FileIcon } from 'lucide-react';
+
 import { useEffect, useRef, useState } from 'react';
 
 export default function Index({ posts: initialPosts = [] }) {
@@ -211,7 +214,7 @@ export default function Index({ posts: initialPosts = [] }) {
                                             }}
                                         />
                                     </Avatar>
-                                    
+
                                     <div className="min-w-0 flex-1">
                                         <div className="flex justify-between">
                                             <h3 className="font-semibold">
@@ -223,7 +226,6 @@ export default function Index({ posts: initialPosts = [] }) {
                                             </span>
                                         </div>
 
-                                        {/* TEXTO DEL POST - SOLUCIÓN APLICADA */}
                                         <div className="mt-1 w-full">
                                             <p className="overflow-x-hidden whitespace-pre-wrap break-words text-gray-700">
                                                 {post.content_text}
@@ -237,6 +239,10 @@ export default function Index({ posts: initialPosts = [] }) {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                                <div className="mt-3 flex gap-4 border-t pt-3">
+                                    <LikeButton post={post} />
+                                    <CommentSection post={post} />
                                 </div>
                             </Card>
                         ))}
