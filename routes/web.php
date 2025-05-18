@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MuroController;
@@ -35,6 +36,7 @@ Route::get('/debug-comments', function () {
     ];
 });
 Route::middleware('auth')->group(function () {
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->middleware('auth');
     Route::post('posts/{post}/like', [LikeController::class, 'toggleLike'])
     ->name('posts.like')
     ->middleware('auth');

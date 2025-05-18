@@ -9,29 +9,31 @@ use Illuminate\Support\Facades\Auth;
 class MuroController extends Controller
 {
     public function index()
-    {
-        return Inertia::render('Muro/Index', [
-            'posts' => Post::query()
-                ->with([
-                    'user' => fn($query) => $query->select('id', 'name', 'profile_picture'),
-                    'likes.user:id'
-                ])
-                ->withCount(['likes'])
-                ->latest()
-                ->get()
-                ->map(function ($post) {
-                    return array_merge($post->toArray(), [
-                        'is_liked' => Auth::check()
-                            ? $post->likes->contains('user_id', Auth::id())
-                            : false
-                    ]);
-                }),
-            'flash' => [
-                'success' => session('success'),
-                'error' => session('error')
-            ]
-        ]);
-    }
+{
+    return Inertia::render('Muro/Index', [
+        'posts' => Post::query()
+            ->with([
+                'user' => fn($query) => $query->select('id', 'name', 'profile_picture'),
+                'likes.user:id',
+                'comments.user:id,name,profile_picture',
+                'comments.replies.user:id,name,profile_picture'
+            ])
+            ->withCount(['likes', 'comments'])
+            ->latest()
+            ->get()
+            ->map(function ($post) {
+                return array_merge($post->toArray(), [
+                    'is_liked' => Auth::check()
+                        ? $post->likes->contains('user_id', Auth::id())
+                        : false
+                ]);
+            }),
+        'flash' => [
+            'success' => session('success'),
+            'error' => session('error')
+        ]
+    ]);
+}
 
     public function personal()
     {
