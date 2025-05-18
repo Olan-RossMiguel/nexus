@@ -12,10 +12,13 @@ import axios from 'axios';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export function CommentSection({ post }) {
+export function CommentSection({ post, onCommentAdded }) {
     const [isOpen, setIsOpen] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [comments, setComments] = useState([]);
+    const [localCommentsCount, setLocalCommentsCount] = useState(
+        post.comments_count || 0,
+    ); // Estado local para el contador
 
     useEffect(() => {
         if (post?.comments) {
@@ -36,6 +39,9 @@ export function CommentSection({ post }) {
             if (response.data.success) {
                 setComments([...comments, response.data.comment]);
                 setNewComment('');
+                // Actualiza el contador local
+                setLocalCommentsCount((prev) => prev + 1);
+                if (onCommentAdded) onCommentAdded();
             }
         } catch (error) {
             console.error('Error al enviar el comentario:', error);
@@ -99,14 +105,16 @@ export function CommentSection({ post }) {
             >
                 <MessageSquare className="h-5 w-5" />
                 <span className="min-w-[20px] text-center text-sm">
-                    {commentsCount}
+                    {localCommentsCount}
                 </span>
             </button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>Comentarios ({commentsCount})</DialogTitle>
+                        <DialogTitle>
+                            Comentarios ({localCommentsCount})
+                        </DialogTitle>
                         <DialogDescription>
                             Comentarios de la publicación
                         </DialogDescription>
