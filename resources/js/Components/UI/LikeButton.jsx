@@ -10,6 +10,7 @@ export const LikeButton = ({ post }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleLike = () => {
+        if (post.isOptimistic || typeof post.id === 'string') return;
         if (!auth.user || isProcessing) return;
 
         // Guardar estado original para posible reversión

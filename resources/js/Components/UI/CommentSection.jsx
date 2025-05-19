@@ -37,6 +37,7 @@ export function CommentSection({ post, onCommentAdded }) {
     }, [isOpen, replyingTo]);
 
     const handleAddComment = async () => {
+        if (post.isOptimistic || typeof post.id === 'string') return;
         if (!newComment.trim()) return;
 
         try {

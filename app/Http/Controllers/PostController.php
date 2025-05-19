@@ -17,7 +17,8 @@ class PostController extends Controller
     {
         $validated = $request->validate([
             'content_text' => 'required|string|max:5000',
-            'media_url' => 'nullable|file|mimes:jpg,png,jpeg,gif,pdf,mp4,mov|max:10240'
+            'media_url' => 'nullable|file|mimes:jpg,png,jpeg,gif,pdf,mp4,mov|max:10240',
+            'tempId' => 'sometimes|string' // Añade esto para recibir el ID temporal
         ]);
 
         /** @var \App\Models\User $user */
@@ -45,7 +46,9 @@ class PostController extends Controller
         return back()->with([
             'flash' => [
                 'success' => 'Publicación creada con éxito',
-                'newPost' => $post
+                'newPost' => $post->load('user'),
+                'tempId' => $request->input('tempId'), // Incluimos el tempId
+                'action' => 'create' // Identificador para el frontend
             ]
         ]);
     }

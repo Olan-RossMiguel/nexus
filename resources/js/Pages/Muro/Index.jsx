@@ -90,11 +90,14 @@ export default function Index({ posts: initialPosts = [] }) {
     }, [user]);
 
     const handlePostCreated = (newPostOrAction) => {
+        // Caso 1: Eliminación (sin cambios)
         if (newPostOrAction.action === 'remove') {
             setPosts((prev) =>
                 prev.filter((p) => p.tempId !== newPostOrAction.tempId),
             );
-        } else if (newPostOrAction.action === 'update') {
+        }
+        // Caso 2: Actualización (sin cambios)
+        else if (newPostOrAction.action === 'update') {
             setPosts((prev) =>
                 prev.map((post) =>
                     post.tempId === newPostOrAction.tempId
@@ -102,9 +105,10 @@ export default function Index({ posts: initialPosts = [] }) {
                               ...post,
                               ...newPostOrAction.updates,
                               isOptimistic: false,
-                              user: newPostOrAction.updates.user ||
+                              user:
+                                  newPostOrAction.updates.user ||
                                   post.user ||
-                                  authUser || { id: null },
+                                  authUser,
                               ...(newPostOrAction.updates.id && {
                                   id: newPostOrAction.updates.id,
                                   tempId: undefined,
@@ -113,15 +117,38 @@ export default function Index({ posts: initialPosts = [] }) {
                         : post,
                 ),
             );
-        } else {
-            const completePost = {
+        }
+        // Caso 3: Creación (nueva lógica para Inertia)
+        else {
+            const tempId = `temp-${Date.now()}`;
+            const tempPost = {
                 ...newPostOrAction,
-                user: newPostOrAction.user || authUser || { id: null },
+                id: tempId,
+                tempId,
                 isOptimistic: true,
+                user: newPostOrAction.user || authUser,
             };
-            setPosts((prev) => [completePost, ...prev]);
+
+            setPosts((prev) => [tempPost, ...prev]);
+
+            // Inertia manejará la respuesta y actualización automática
         }
     };
+
+    // En tu componente principal, maneja la respuesta flash:
+    const { flash } = usePage().props;
+
+    useEffect(() => {
+        if (flash?.newPost && flash.action === 'create') {
+            setPosts((prev) =>
+                prev.map((post) =>
+                    post.tempId === flash.tempId
+                        ? { ...flash.newPost, isOptimistic: false }
+                        : post,
+                ),
+            );
+        }
+    }, [flash]);
 
     const handleSaveEdit = async (updatedPost) => {
         try {

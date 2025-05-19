@@ -27,6 +27,7 @@ export default {
     			light: '#f2f2f2',
     			medium: '#c7c7c7',
     			dark: '#777777',
+				'dark-custom': '#383838',
     			accent: {
     				DEFAULT: 'hsl(var(--accent))',
     				foreground: 'hsl(var(--accent-foreground))'

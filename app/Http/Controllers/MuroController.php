@@ -18,17 +18,15 @@ class MuroController extends Controller
                 ->with([
                     'user' => fn($query) => $query->select('id', 'name', 'profile_picture'),
                     'likes.user:id',
-                    'comments.user:id,name,profile_picture',
-                    'comments.replies.user:id,name,profile_picture'
+                    'comments' => fn($query) => $query->with([
+                        'user:id,name,profile_picture',
+                        'replies' => fn($q) => $q->with('user:id,name,profile_picture')->latest()
+                    ])->latest()
                 ])
-                ->withCount(['likes'])
+                ->withCount(['likes', 'comments'])
                 ->latest()
                 ->get()
                 ->map(function ($post) use ($user) {
-                    $totalComments = $post->comments->count() + $post->comments->sum(function ($comment) {
-                        return $comment->replies->count();
-                    });
-
                     return [
                         'id' => $post->id,
                         'content_text' => $post->content_text,
@@ -42,11 +40,26 @@ class MuroController extends Controller
                             'profile_picture' => $post->user->profile_picture
                         ],
                         'is_liked' => $user ? $post->likes->contains('user_id', $user->id) : false,
-                        'comments_count' => $totalComments,
+                        'comments' => $post->comments->map(function ($comment) {
+                            return [
+                                'id' => $comment->id,
+                                'content' => $comment->content,
+                                'created_at' => $comment->created_at->toISOString(),
+                                'user' => $comment->user,
+                                'replies' => $comment->replies->map(function ($reply) {
+                                    return [
+                                        'id' => $reply->id,
+                                        'content' => $reply->content,
+                                        'created_at' => $reply->created_at->toISOString(),
+                                        'user' => $reply->user
+                                    ];
+                                })
+                            ];
+                        }),
+                        'comments_count' => $post->comments_count,
                         'likes_count' => $post->likes_count
                     ];
                 }),
-            // Cambia 'authUser' a 'user' para consistencia
             'user' => $user ? [
                 'id' => (string)$user->id,
                 'name' => $user->name,
@@ -58,7 +71,6 @@ class MuroController extends Controller
             ]
         ]);
     }
-
     public function personal()
     {
         /** @var \App\Models\User $user */
