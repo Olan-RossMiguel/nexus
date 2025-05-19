@@ -1,20 +1,25 @@
-// ... imports
 import { Avatar } from '@/Components/UI/avatar';
 import { Card } from '@/Components/UI/card';
 import { CommentSection } from '@/Components/UI/CommentSection';
 import { LikeButton } from '@/Components/UI/LikeButton';
+import { PostActions } from '@/Components/UI/PostActions';
 import { PostCreator } from '@/Components/UI/PostCreator';
+import { PostEditorModal } from '@/Components/UI/PostEditorModal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { FileIcon } from 'lucide-react';
-
 import { useEffect, useRef, useState } from 'react';
+
+const DEFAULT_AVATAR =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjODg4IiBmb250LXNpemU9IjQwIj5VPC90ZXh0Pjwvc3ZnPg==';
 
 export default function Index({ posts: initialPosts = [] }) {
     const { user } = usePage().props;
     const [posts, setPosts] = useState(initialPosts);
     const [isConnected, setIsConnected] = useState(false);
     const echoInstance = useRef(window.Echo);
+    const [editingPost, setEditingPost] = useState(null);
 
     useEffect(() => {
         if (!echoInstance.current) {
@@ -27,7 +32,6 @@ export default function Index({ posts: initialPosts = [] }) {
         const handleNewPost = (data) => {
             const newPost = data.post;
             setPosts((prev) => {
-                // Busca coincidencia por tempId O por id
                 const existingIndex = prev.findIndex(
                     (p) =>
                         p.tempId === newPost.tempId ||
@@ -39,29 +43,28 @@ export default function Index({ posts: initialPosts = [] }) {
                     updatedPosts[existingIndex] = {
                         ...newPost,
                         isOptimistic: false,
-                        tempId: undefined, // Eliminamos el tempId
+                        tempId: undefined,
+                        user: newPost.user ||
+                            updatedPosts[existingIndex].user ||
+                            authUser || { id: null },
                     };
                     return updatedPosts;
                 }
 
-                return [newPost, ...prev];
+                return [
+                    {
+                        ...newPost,
+                        user: newPost.user || authUser || { id: null },
+                    },
+                    ...prev,
+                ];
             });
-            console.log('Nuevo post recibido:', newPost);
         };
 
-        channel.listen('.new.post', handleNewPost).error((error) => {
-            console.error('Error de conexión al canal:', error);
-        });
+        channel.listen('.new.post', handleNewPost).error(console.error);
 
-        const handleConnected = () => {
-            setIsConnected(true);
-            console.log('Conectado a Pusher');
-        };
-
-        const handleDisconnected = () => {
-            setIsConnected(false);
-            console.warn('Desconectado de Pusher');
-        };
+        const handleConnected = () => setIsConnected(true);
+        const handleDisconnected = () => setIsConnected(false);
 
         echoInstance.current.connector.pusher.connection.bind(
             'connected',
@@ -84,9 +87,8 @@ export default function Index({ posts: initialPosts = [] }) {
                 handleDisconnected,
             );
         };
-    }, []);
+    }, [user]);
 
-    // ✅ Versión final de handlePostCreated
     const handlePostCreated = (newPostOrAction) => {
         if (newPostOrAction.action === 'remove') {
             setPosts((prev) =>
@@ -100,6 +102,9 @@ export default function Index({ posts: initialPosts = [] }) {
                               ...post,
                               ...newPostOrAction.updates,
                               isOptimistic: false,
+                              user: newPostOrAction.updates.user ||
+                                  post.user ||
+                                  authUser || { id: null },
                               ...(newPostOrAction.updates.id && {
                                   id: newPostOrAction.updates.id,
                                   tempId: undefined,
@@ -111,12 +116,85 @@ export default function Index({ posts: initialPosts = [] }) {
         } else {
             const completePost = {
                 ...newPostOrAction,
-                user: newPostOrAction.user || user,
+                user: newPostOrAction.user || authUser || { id: null },
                 isOptimistic: true,
             };
             setPosts((prev) => [completePost, ...prev]);
         }
-        console.log('Acción en post:', newPostOrAction);
+    };
+
+    const handleSaveEdit = async (updatedPost) => {
+        try {
+            const response = await axios.put(
+                `/posts/${updatedPost.id}`,
+                {
+                    content_text: updatedPost.content_text,
+                },
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+
+            // Actualiza el estado local
+            setPosts(
+                posts.map((p) =>
+                    p.id === updatedPost.id
+                        ? { ...p, content_text: updatedPost.content_text }
+                        : p,
+                ),
+            );
+
+            setEditingPost(null);
+        } catch (error) {
+            console.error('Error detallado:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            });
+
+            alert(error.response?.data?.message || 'Error al guardar cambios');
+        }
+    };
+
+    const handleEditPost = (post) => {
+        console.log('Editando post:', post.id); // Para debug
+        setEditingPost(post); // Abre el modal de edición
+    };
+
+    const handleDeletePost = async (postId) => {
+        if (!confirm('¿Eliminar esta publicación permanentemente?')) return;
+
+        try {
+            // Opción 1: Usando axios (funcional)
+            const response = await axios.delete(`/posts/${postId}`);
+
+            if (response.data.success) {
+                setPosts(posts.filter((post) => post.id !== postId));
+            } else {
+                throw new Error(response.data.message || 'Error al eliminar');
+            }
+
+            /* 
+            // Opción 2: Usando Inertia (alternativa)
+            router.delete(`/posts/${postId}`, {
+                onSuccess: () => setPosts(posts.filter(post => post.id !== postId)),
+                preserveScroll: true
+            });
+            */
+        } catch (error) {
+            console.error('Error al eliminar:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            });
+            alert(
+                'Error al eliminar: ' +
+                    (error.response?.data?.message || error.message),
+            );
+        }
     };
 
     const getMediaUrl = (path) => {
@@ -171,13 +249,17 @@ export default function Index({ posts: initialPosts = [] }) {
     };
 
     const formatDate = (dateString) => {
-        if (!dateString) return '';
-        return new Date(dateString).toLocaleDateString('es-ES', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        if (!dateString) return 'Enviando...';
+        try {
+            return new Date(dateString).toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch {
+            return dateString;
+        }
     };
 
     return (
@@ -205,10 +287,9 @@ export default function Index({ posts: initialPosts = [] }) {
                                                 post.user?.profile_picture ||
                                                 '/images/default-avatar.png'
                                             }
-                                            alt="Avatar"
+                                            alt={post.user?.name || 'Avatar'}
                                             onError={(e) => {
-                                                e.target.src =
-                                                    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjODg4IiBmb250LXNpemU9IjQwIj5VPC90ZXh0Pjwvc3ZnPg==';
+                                                e.target.src = DEFAULT_AVATAR;
                                                 e.target.alt =
                                                     'Avatar por defecto';
                                             }}
@@ -216,14 +297,40 @@ export default function Index({ posts: initialPosts = [] }) {
                                     </Avatar>
 
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex justify-between">
+                                        <div className="flex items-center justify-between">
                                             <h3 className="font-semibold">
                                                 {post.user?.name || 'Usuario'}
                                             </h3>
-                                            <span className="text-xs text-gray-500">
-                                                {formatDate(post.created_at) ||
-                                                    'Enviando...'}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">
+                                                    {formatDate(
+                                                        post.created_at,
+                                                    )}
+                                                </span>
+
+                                                <div className="ml-2">
+                                                    {console.log(
+                                                        'Render PostActions for:',
+                                                        post.id,
+                                                    )}
+                                                    {String(post.user?.id) ===
+                                                        String(user?.id) && (
+                                                        <div className="relative ml-2">
+                                                            {/* Debug visual */}
+
+                                                            <PostActions
+                                                                post={post}
+                                                                onEdit={
+                                                                    handleEditPost
+                                                                }
+                                                                onDelete={
+                                                                    handleDeletePost
+                                                                }
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="mt-1 w-full">
@@ -255,6 +362,13 @@ export default function Index({ posts: initialPosts = [] }) {
                     </Card>
                 )}
             </div>
+            {editingPost && (
+                <PostEditorModal
+                    post={editingPost}
+                    onClose={() => setEditingPost(null)}
+                    onSave={handleSaveEdit}
+                />
+            )}
         </AuthenticatedLayout>
     );
 }

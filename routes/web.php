@@ -37,6 +37,8 @@ Route::get('/debug-comments', function () {
 });
 Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->middleware('auth');
+    Route::put('/comments/{comment}', [CommentController::class, 'update']);
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
     Route::post('posts/{post}/like', [LikeController::class, 'toggleLike'])
     ->name('posts.like')
     ->middleware('auth');
@@ -46,6 +48,8 @@ Route::middleware('auth')->group(function () {
   
     Route::post('/posts/{post}/comment', [PostController::class, 'comment'])->middleware('auth');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+    Route::put('/posts/{post}', [PostController::class, 'update']);
+    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
     Route::get('/private/media/{userId}/{filename}', [PostController::class, 'showMedia'])
         ->name('private.media');
     // Muro

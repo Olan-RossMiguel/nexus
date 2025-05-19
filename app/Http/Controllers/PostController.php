@@ -167,6 +167,31 @@ class PostController extends Controller
             })
         ]);
     }
+    // En PostController.php
+    public function update(Request $request, Post $post)
+    {
+        $this->authorize('update', $post);
+
+        $validated = $request->validate([
+            'content_text' => 'required|string|max:5000'
+        ]);
+
+        $post->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'post' => $post->fresh() // Devuelve el post actualizado
+        ]);
+    }
+
+    public function destroy(Post $post)
+    {
+        $this->authorize('delete', $post);
+
+        $post->delete();
+
+        return response()->json(['success' => true]);
+    }
 }
 
 //ME QUEDÉ HASTA AQUÍ, FALTA PONER LO DE LIKE Y COMMENTS
