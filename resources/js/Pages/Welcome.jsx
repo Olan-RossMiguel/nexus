@@ -4,6 +4,10 @@ import { useState } from 'react'; // Asegúrate de importar esto
 export default function Welcome() {
     const [isMenuOpen, setIsMenuOpen] = useState(false); // Agrega esto
     return (
+
+
+
+        
         <>
             <Head title="NEXUS - Plataforma Científica" />
 

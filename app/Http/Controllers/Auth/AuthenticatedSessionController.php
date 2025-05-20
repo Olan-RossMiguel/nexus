@@ -14,7 +14,7 @@ use Inertia\Response;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Display the login view.env
      */
     public function create(): Response
     {
@@ -30,10 +30,10 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
-        return redirect()->intended(route('muro.publico', absolute: false));
+        // Redirige siempre al muro público sin verificar intended
+        return redirect()->route('muro.publico');
     }
 
     /**
